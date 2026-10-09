@@ -382,7 +382,7 @@ function getRecommendations(movieTitle, topN = 6) {
       score: i ===idx ? -1 : cosineSimilarity(tfidfVectors[idx], tfidfVectors[i]),
       isRated: Boolean(rating)
     };
-  }).filters (s=>s.score > -1);
+  }).filter(s=>s.score > -1);
 
   allScores.sort((a,b)=> b.score - a.score);
 
