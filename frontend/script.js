@@ -150,7 +150,7 @@ async function fetchMovie(title) {
 async function loadMovies(list = MOVIE_DATA) {
   movieContainer.innerHTML = '';
 
-  // STEP 1: Saari movies turant local data se show karo — API ka wait nahi
+  
   list.forEach((localMeta) => {
     createMovieCardLocal(localMeta, TRAILERS[localMeta.title] || '');
   });
@@ -158,7 +158,7 @@ async function loadMovies(list = MOVIE_DATA) {
   const count = document.getElementById('search-count');
   if (count) count.textContent = `${list.length} movie${list.length !== 1 ? 's' : ''}`;
 
-  // STEP 2: Background mein posters quietly update karo
+  
   list.forEach(async (localMeta) => {
     try {
       const data = await fetchMovie(localMeta.title);
@@ -176,7 +176,6 @@ async function loadMovies(list = MOVIE_DATA) {
   });
 }
 
-// Local data se turant card banao
 function createMovieCardLocal(localMeta, trailerUrl) {
   const card = document.createElement('div');
   card.className = 'movie-card';
@@ -376,17 +375,25 @@ function getRecommendations(movieTitle, topN = 6) {
 
   const idx = MOVIE_DATA.findIndex(m => m.title === movieTitle);
   if (idx === -1) return [];
+  const allScores = MOVIE_DATA.map((m,i))=> {
+    const rating = (movieRatings[m.title] && movieRatings[m.title]>0) || (movieRatings[m.imdbID] && movieRatings[m.imdbID] >0)
+    return {
+      movie; m,
+      score: i ===idx ? -1 : cosineSimilarity(tfidfVectors[idx], tfidfVectors[i]),
+      isRated: Boolean(rating)
+    };
+  }).filters (s=>s.score > -1);
 
-  const scores = MOVIE_DATA.map((m, i) => ({
-    movie: m,
-    score: i === idx ? -1 : cosineSimilarity(tfidfVectors[idx], tfidfVectors[i])
-  }));
+  allScores.sort((a,b)=> b.score - a.score);
 
-  return scores
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topN)
-    .map(s => ({ ...s.movie, _recommended: true, _similarity: s.score }));
-}
+  const unrated = allScores.filter(s => !s.isRated);
+  const rated = allScores.filter(s => s.isRated);
+   
+  const combined= [...unrated, ...rated];
+
+  return combined
+  .slice(0, topN)
+  .map(s=> ({...s.movie, _recommended: true, _similarity: s.score}));
 
 function populateRecSelect() {
   const sel = document.getElementById('rec-movie-select');
